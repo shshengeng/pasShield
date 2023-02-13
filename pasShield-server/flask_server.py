@@ -1,21 +1,20 @@
 from flask import Flask, request,render_template
 import socket
 
-server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_socket.bind(("localhost", 8080))
-server_socket.listen(5)
-client_socket, client_address = server_socket.accept()
+
 app = Flask(__name__)
+
 
 @app.route("/")
 def index():
+    tcp_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    tcp_client.connect(("localhost", 8080))
+    tcp_client.send("hello".encode("utf-8"))
+
+    # 等待 TCP 客户端响应并返回结果
+    #response = tcp_client.recv(1024).decode("utf-8")
     return render_template("index.html")
-@app.route("/")
-def req_Credentials_from_ego():
-    request = client_socket.recv(1024).decode("utf-8")
-    tcp_client.send("{}:{}".format(username, password).encode("utf-8"))
-    print(request)
-    return request
+    
 
 @app.route("/login", methods=["POST"])
 def login():
