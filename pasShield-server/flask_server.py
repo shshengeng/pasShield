@@ -1,6 +1,10 @@
 from flask import Flask, request,render_template
 import socket
 
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_socket.bind(("localhost", 8080))
+server_socket.listen(5)
+client_socket, client_address = server_socket.accept()
 app = Flask(__name__)
 
 @app.route("/")
@@ -8,13 +12,10 @@ def index():
     return render_template("index.html")
 @app.route("/")
 def req_Credentials_from_ego():
-    tcp_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    tcp_client.connect(("localhost", 8080))
+    request = client_socket.recv(1024).decode("utf-8")
     tcp_client.send("{}:{}".format(username, password).encode("utf-8"))
-
-    # wait go application's response
-    response = tcp_client.recv(1024).decode("utf-8")
-    return response
+    print(request)
+    return request
 
 @app.route("/login", methods=["POST"])
 def login():
