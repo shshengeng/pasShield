@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-'a socket example which send echo message to server.'
+'a socket test which send message to server.'
 
 import socket
 
