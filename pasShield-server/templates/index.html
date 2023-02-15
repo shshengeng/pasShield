@@ -1,9 +1,30 @@
-<html>
-    <body>
-        <form action="http://localhost:5000/login" method="post">
-            <input type="text" name="username" placeholder="Username">
-            <input type="password" name="password" placeholder="Password">
-            <input type="submit" value="Login">
-        </form>
-    </body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Passheld</title>
+    <style> .rr{float:left;width:50%;}</style>
+</head>
+<body>
+  <div style="width:600px;height:30px">
+    <div class="rr"> Passheld home page  </div>
+    <div class="rr">
+      {% if session['username'] == 'karl'  %}
+       <a href="#">{{ session['username']}}</a>
+       <a href="{{ url_for('logOut')}}">Log out</a>
+    {% else %}                   
+        <a href="{{ url_for('loginpage') }}">login</a>
+        <a href="#">Register</a>
+    {% endif %}
+
+    </div>
+    <div style="clear:both;"></div>
+</div>
+
+<hr>
+<ul>
+    <li><a href="{{ url_for('newspage') }}">News</a></li>
+</ul>
+{{data}}
+</body>
 </html>
