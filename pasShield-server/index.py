@@ -13,8 +13,8 @@ try:
 except ConnectionRefusedError:
     print("tcp connect failed")
 
-http_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 try:
+    http_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     http_sock.connect(('localhost', 8000))      #connect to http server
     http_sock.send('http connect'.encode('utf-8'))
     http_recv = http_sock.recv(1024)
