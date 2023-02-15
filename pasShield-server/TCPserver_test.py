@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-'a server example which send hello to client.'
+'a server test which send message to client.'
 
 import time, socket, threading
 
