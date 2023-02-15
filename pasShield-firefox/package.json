@@ -1,0 +1,19 @@
+{
+  "name": "passhield-firefox",
+  "version": "1.0.0",
+  "description": "",
+  "main": "background.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@azure/attestation": "^1.0.0",
+    "aesjs": "^1.0.0",
+    "jsbn": "^1.1.0",
+    "jsrsasign-util": "^1.0.5",
+    "sjcl": "^1.0.8"
+  }
+}
