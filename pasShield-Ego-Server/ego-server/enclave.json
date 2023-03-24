@@ -4,5 +4,15 @@
     "debug": true,
     "heapSize": 512,
     "productID": 1234,
-    "securityVersion": 2
+    "securityVersion": 2,
+    "mounts": [
+        {
+            "source": "/home/azureuser/Desktop/pasShield-Server/ego-server/data",
+            "target": "/data",
+            "type": "hostfs",
+            "readOnly": false
+        }
+    ],
+     "env": null,
+     "files": null
 }

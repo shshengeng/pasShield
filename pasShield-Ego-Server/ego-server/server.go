@@ -12,6 +12,13 @@ import (
 	"math/big"
 	"net/http"
 	"time"
+	"log"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
+	"github.com/edgelesssys/ego/ecrypto"
+	"database/sql"
+	_ "github.com/mattn/go-sqlite3"
 
 	"gopkg.in/square/go-jose.v2/jwt"
 	"github.com/edgelesssys/ego/enclave"
@@ -46,6 +53,57 @@ func main() {
 	http.HandleFunc("/secret", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("📫 %v sent secret %v\n", r.RemoteAddr, r.URL.Query()["s"])
 	})
+	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
+		var username = r.URL.Query()["username"]
+		var pwd = r.URL.Query()["password"]
+		fmt.Printf("📫 %v sent username %v\n", r.RemoteAddr, username)
+		fmt.Printf("📫 %v sent password %v\n", r.RemoteAddr, pwd)
+		
+		//generate a random hmac key 
+		random_hmackey, err := GenerateRandomString(128)
+		fmt.Println("random_hmackey: ", random_hmackey)
+		fmt.Println("*********************************************************************************************************************************************************************************************************")
+
+		//seal the hmac key we just generated
+		var Seal = Seal_hmacKey(random_hmackey)
+		fmt.Println("seal_hmackey: ", Seal)
+
+		//create database
+		database, err := sql.Open("sqlite3", "./data/password.db")
+		if err != nil {
+			panic(err)
+		}
+		statement, _ := database.Prepare("CREATE TABLE IF NOT EXISTS Hmac (username varchar(50) PRIMARY KEY, hmac varchar(128), salt varchar(128))")
+		statement.Exec()
+		statement, _ = database.Prepare("INSERT INTO Hmac (username, hmac,salt) VALUES (?, ?, ?)")
+		
+		// generate a random salt with 10 rounds of complexity
+		var salt = generateRandomSalt(saltSize)
+		fmt.Println("Salt: ", salt)
+			
+		var salting = salting(pwd[0], salt)
+		fmt.Println("Salted byte: ", salting)
+
+		var hmac = genHmac(salting, Seal)
+		fmt.Println("hmac: ", hmac)
+			
+		//insert data into DB 
+		statement.Exec(username[0], hmac, salt)
+
+		rows, _ := database.Query("SELECT * FROM Hmac")
+		fmt.Println("///////////////////sql code below(test only)/////////////////////////////////")
+		for rows.Next() {
+			rows.Scan(&username, &hmac, &salt)
+			fmt.Println("Username: " , username , "\nHmac: " , hmac , "\nsalt: " , salt , "\n")
+		}
+
+		fmt.Println("////////////////////////////////////////////////////")
+		fmt.Println("////////////////////////////////////////////////////")
+		fmt.Println("////////////////////////////////////////////////////")
+    
+	})
+	
+	
 
 	tlsCfg := tls.Config{
 		Certificates: []tls.Certificate{
@@ -61,6 +119,86 @@ func main() {
 	fmt.Printf("👂 Listening on https://%s/secret for secrets...\n", serverAddr)
 	err = server.ListenAndServeTLS("", "")
 	fmt.Println(err)
+}
+const saltSize = 16
+
+//the words in the random string 
+func GenerateRandomString(n int) (string, error) {
+	const letters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-"
+	ret := make([]byte, n)
+	for i := 0; i < n; i++ {
+		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(letters))))
+		if err != nil {
+			return "", err
+		}
+		ret[i] = letters[num.Int64()]
+	}
+
+	return string(ret), nil
+}
+
+//seal the Hmac key
+func Seal_hmacKey(hmacKey string) []byte {
+	var keyBytes = []byte(hmacKey)
+	var additionalData []byte
+	seal, err := ecrypto.SealWithUniqueKey(keyBytes,additionalData)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return seal
+}
+
+
+func generateRandomSalt(saltSize int) []byte {
+	var salt = make([]byte, saltSize)
+
+	_, err := rand.Read(salt[:])
+
+	if err != nil {
+		panic(err)
+	}
+
+	return salt
+}
+
+func getPwd() string{
+    // Prompt the user to enter a password
+    fmt.Println("Enter a password")
+    // Variable to store the users input
+    var pwd string
+    // Read the users input
+    _, err := fmt.Scan(&pwd)
+    if err != nil {
+        log.Println(err)
+    }
+    return pwd
+}
+
+func salting(password string, salt []byte) []byte{
+	var passwordBytes = []byte(password)
+	passwordBytes = append(passwordBytes, salt...)
+	return passwordBytes
+}
+
+
+func genHmac(salted_password []byte, key []byte) string {
+	
+	// Create sha-256 hasher
+	mac := hmac.New(sha256.New, key)
+
+	// Write password bytes to the hasher
+	mac.Write(salted_password)
+
+	// Get the SHA-256 hashed password
+	expectedMAC := mac.Sum(nil)
+
+	// Convert the hashed password to a hex string
+	var hmacHex = hex.EncodeToString(expectedMAC)
+
+	//return hmacHex
+	return hmacHex
 }
 
 func createCertificate() ([]byte, crypto.PrivateKey) {
