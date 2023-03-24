@@ -37,7 +37,7 @@ function oncomingHeaders(details){
             //attestation done
             attestOrSent("attestation").then((s) => {
                 if(s === "Attest successfully"){
-                    attestationStatus = true
+                    attestationStatus = true;
                     browser.tabs.query({active: true, currentWindow: true, status: "complete"}, function (tabs) {
                         if(tabs[0] !== undefined){
                             browser.tabs.sendMessage(tabs[0].id, {SGXEnabled:"true"}, function(response){
@@ -106,23 +106,18 @@ browser.tabs.onActivated.addListener(function(info) {
 });
 
 
-// browser.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-//     //one side communication, the content script just sends a message about sgx in the beginning
-//     if(request.type === "SGXEnabled"){
-//         setIconAndPopup({path: 'imgs/icons/shield.png'}, {popup: 'html/supported.html'}, function() {
-//             console.log("Icon and popup set successfully.");
-//         });
-//     } else if (request.type === "SGXNotEnabled"){
-//         setIconAndPopup({path: 'imgs/icons/cross.png'}, {popup: 'html/unsupported.html'}, function() {
-//             console.log("Icon and popup set failed.");
-//         });
-//     }
-//     // else if (request.clicked){
-//     //     chrome.tabs.query({active: true, currentWindow: true, status: "complete"}, function (tabs) {
-//     //         chrome.tabs.sendMessage(tabs[0].id, {inject: true}, function (response) {});
-//     //     });
-//     // }
-// });
+browser.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+    //one side communication, the content script just sends a message about sgx in the beginning
+    if(request.type === "SGXEnabled"){
+        setIconAndPopup({path: 'imgs/icons/shield.png'}, {popup: 'html/supported.html'}, function() {
+            console.log("Icon and popup set successfully.");
+        });
+    } else if (request.type === "SGXNotEnabled"){
+        setIconAndPopup({path: 'imgs/icons/cross.png'}, {popup: 'html/unsupported.html'}, function() {
+            console.log("Icon and popup set failed.");
+        });
+    }
+});
 
 
 

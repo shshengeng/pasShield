@@ -37,7 +37,6 @@
     "permissions": [
         "tabs",
         "activeTab",
-        "storage",
         "webRequest",
         "webNavigation",
         "webRequestBlocking",
