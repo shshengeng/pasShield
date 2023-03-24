@@ -53,11 +53,23 @@ func main() {
 	http.HandleFunc("/secret", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("📫 %v sent secret %v\n", r.RemoteAddr, r.URL.Query()["s"])
 	})
-	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
-		var username = r.URL.Query()["username"]
-		var pwd = r.URL.Query()["password"]
+	http.HandleFunc("/register", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			http.Error(w, "Only POST requests are allowed", http.StatusBadRequest)
+			return
+		}
+	
+		err := r.ParseForm()
+		if err != nil {
+			http.Error(w, "Failed to parse request body", http.StatusBadRequest)
+			return
+		}
+	
+		username := r.FormValue("username")
+		pwd := r.FormValue("password")
+
 		fmt.Printf("📫 %v sent username %v\n", r.RemoteAddr, username)
-		fmt.Printf("📫 %v sent password %v\n", r.RemoteAddr, pwd)
+   		fmt.Printf("📫 %v sent password %v\n", r.RemoteAddr, pwd)
 		
 		//generate a random hmac key 
 		random_hmackey, err := GenerateRandomString(128)
@@ -81,7 +93,7 @@ func main() {
 		var salt = generateRandomSalt(saltSize)
 		fmt.Println("Salt: ", salt)
 			
-		var salting = salting(pwd[0], salt)
+		var salting = salting(pwd, salt)
 		fmt.Println("Salted byte: ", salting)
 
 		var hmac = genHmac(salting, Seal)
@@ -89,17 +101,22 @@ func main() {
 			
 		//insert data into DB 
 		statement.Exec(username[0], hmac, salt)
+		
+		w.Write([]byte(username))
+		w.Write([]byte(hmac))
+		w.Write([]byte(salt))
 
-		rows, _ := database.Query("SELECT * FROM Hmac")
+		/*rows, _ := database.Query("SELECT * FROM Hmac")
 		fmt.Println("///////////////////sql code below(test only)/////////////////////////////////")
 		for rows.Next() {
 			rows.Scan(&username, &hmac, &salt)
 			fmt.Println("Username: " , username , "\nHmac: " , hmac , "\nsalt: " , salt , "\n")
+			
 		}
 
 		fmt.Println("////////////////////////////////////////////////////")
 		fmt.Println("////////////////////////////////////////////////////")
-		fmt.Println("////////////////////////////////////////////////////")
+		fmt.Println("////////////////////////////////////////////////////")*/
     
 	})
 	
@@ -122,7 +139,7 @@ func main() {
 }
 const saltSize = 16
 
-//the words in the random string 
+
 func GenerateRandomString(n int) (string, error) {
 	const letters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-"
 	ret := make([]byte, n)
