@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto"
 	"crypto/rand"
+	"crypto/subtle"
 	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
@@ -23,6 +24,9 @@ import (
 	"gopkg.in/square/go-jose.v2/jwt"
 	"github.com/edgelesssys/ego/enclave"
 	"errors"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 // serverAddr is the address of the server
@@ -37,6 +41,12 @@ const attestationProviderURL = "https://shareduks.uks.attest.azure.net"
 
 
 func main() {
+	// Create a channel for receiving OS signals
+	sigCh := make(chan os.Signal, 1)
+
+	// Listening for Interrupt signals
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+
 	// Create a self signed certificate.
 	cert, priv := createCertificate()
 	fmt.Println("🆗 Generated Certificate.")
@@ -72,8 +82,8 @@ func main() {
 
 	//register 
 	http.HandleFunc("/register", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "POST" {
-			http.Error(w, "Only POST requests are allowed", http.StatusBadRequest)
+		if r.Method != "GET" {
+			http.Error(w, "Only GET requests are allowed", http.StatusBadRequest)
 			return
 		}
 	
@@ -102,16 +112,18 @@ func main() {
 		//insert data into DB 
 		if err := AddSaltAndHmac(username, hmac, salt, database); err != nil {
 
-			//if the user name already exist in DB sent err
+			//if the username already exist in DB sent err
+			w.Write([]byte(fmt.Sprintf("username %s already exist in DB. Error: %s", username, err.Error())))
 			fmt.Println(err)
 		}else{
+			//test only
 			fmt.Println("Salt: ", salt)
 			fmt.Println("Salted byte: ", salting)
 			fmt.Println("hmac: ", hmac)
-
-			w.Write([]byte(username))
-			w.Write([]byte(hmac))
-			w.Write(salt)
+			
+			w.Write([]byte(fmt.Sprintf("username: %s", username)))
+			w.Write([]byte(fmt.Sprintf("hmac: %s ", hmac)))
+			w.Write([]byte(fmt.Sprintf("salt: %s ", salt)))
 
 		}
 		
@@ -130,8 +142,8 @@ func main() {
 	})
 
 	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request){
-		if r.Method != "POST" {
-			http.Error(w, "Only POST requests are allowed", http.StatusBadRequest)
+		if r.Method != "GET" {
+			http.Error(w, "Only GET requests are allowed", http.StatusBadRequest)
 			return
 		}
 	
@@ -153,26 +165,32 @@ func main() {
 			if err == sql.ErrNoRows {
 				fmt.Printf("username is not in the Database")
 				w.WriteHeader(http.StatusNotFound)
-				w.Write([]byte(fmt.Sprintf("Record not found for username %s: %s", username, err.Error())))
+				w.Write([]byte(fmt.Sprintf("Record not found for username %s: . Error: %s", username, err.Error())))
+			}
+		}else{
+			var salting = salting(pwd, salt)
+			fmt.Println("Salted byte: ", salting)
+			fmt.Println("hmac from DB: ", hmac)
+
+			var newHmac = genHmac(salting, Seal)
+			fmt.Println("newhmac: ", newHmac)
+
+			//test only
+			//w.Write([]byte(fmt.Sprintf("username: %s", username)))
+			//w.Write([]byte(fmt.Sprintf("salting: %s ", salting)))
+
+			if login := compareHMACs(hmac, newHmac); login == true{
+				fmt.Println("Verification success")
+				//test only
+				w.Write([]byte(fmt.Sprintf("Verification success")))
+			}else{
+				fmt.Println("Verification failure")
+				//test only
+				w.Write([]byte(fmt.Sprintf("Verification failure")))
 			}
 		}
-			
-			
-		var salting = salting(pwd, salt)
-		fmt.Println("Salted byte: ", salting)
-
-		//var hmac = genHmac(salting, Seal)
-		fmt.Println("hmac: ", hmac)
-			
-		
-		w.Write([]byte(username))
-		//w.Write([]byte(hmac))
-		w.Write([]byte(salting))
-    
 	})
 	
-	
-
 	tlsCfg := tls.Config{
 		Certificates: []tls.Certificate{
 			{
@@ -187,6 +205,35 @@ func main() {
 	fmt.Printf("👂 Listening on https://%s/secret for secrets...\n", serverAddr)
 	err = server.ListenAndServeTLS("", "")
 	fmt.Println(err)
+
+	// Receive the Interrupt signal and run the shutdown() function
+	<-sigCh
+	fmt.Println("Shutting down...")
+	shutdown()
+}
+
+//securely stores the state information outside the enclave.
+func shutdown() {
+	fmt.Println("test")
+}
+
+//input hmac from DB and newhmac return bool
+//compare HMACs if hmac1 = hmac2 return true 
+//Otherwise return false
+func compareHMACs(hmac1, hmac2 string) bool {
+	byteHMAC1 := []byte(hmac1)
+	byteHMAC2 := []byte(hmac2)
+
+	// Compare the length of two HMAC values to see if they are equal
+	if len(byteHMAC1) != len(byteHMAC2) {
+		return false
+	}
+
+	// Use the subtle.ConstantTimeCompare() function to compare two HMAC values for equality
+	//The ConstantTimeCompare() function compares two byte arrays to see if they are equal
+	//but it takes time to execute independent of the size of the two inputs
+	//thus preventing side channel attacks.
+	return subtle.ConstantTimeCompare(byteHMAC1, byteHMAC2) == 1
 }
 
 //Determine if username already exists in the 
@@ -210,12 +257,14 @@ func AddSaltAndHmac(username string, hmac string, salt[]byte, database *sql.DB) 
     return err
 }
 
-
+//input username return salt and hmac.  
+//Determine if username already exists in the database 
+//if not  return an error message if it does return  salt and hmac.
 func GetSaltAndHmac(username string, database *sql.DB) ([]byte, string, error) {
     // Execute the selection statement salt and HMAC value
     rows, err := database.Query("SELECT salt, hmac FROM Hmac WHERE username = ?", username)
     if err != nil {
-		fmt.Printf("GetSaltAndHmac err")
+        return nil, "", err
     }
     defer rows.Close()
 
@@ -226,14 +275,19 @@ func GetSaltAndHmac(username string, database *sql.DB) ([]byte, string, error) {
     for rows.Next() {
         err = rows.Scan(&salt, &hmac)
         if err != nil {
-			fmt.Printf("GetSaltAndHmac err")
+            return nil, "", err
         }
+    }
+
+    if salt == nil || hmac == "" {
+        return nil, "", sql.ErrNoRows
     }
 
     return salt, hmac, nil
 }
 
 
+//generate a random hmac key and seal it
 func initialize() []byte {
 
 	//generate a random hmac key 
@@ -247,6 +301,8 @@ func initialize() []byte {
 	//seal the hmac key we just generated
 	var Seal = Seal_hmacKey(random_hmackey)
 	fmt.Println("seal_hmackey: ", Seal)
+
+	//Seal_statement, _ := database.Prepare("CREATE TABLE IF NOT EXISTS Seal (Seal BLOB PRIMARY KEY)")
 	
 	return Seal
 }
