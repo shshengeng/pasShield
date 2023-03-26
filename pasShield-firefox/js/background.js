@@ -123,7 +123,7 @@ browser.runtime.onMessage.addListener(function(request, sender, sendResponse) {
         //get username,password, action
         const username = request.username;
         const password = request.password;
-        const action = request.action
+        const action = request.action;
     
         const str = "username="+username+"&"+"password="+password;
         attestOrSent("http://www.passhield.com:81",action,str).then((s) => {
