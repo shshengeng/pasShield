@@ -84,4 +84,22 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         }
     }
+
+    if(sgx_enabled == true){
+        //get form dom object
+        const form = document.querySelector('form');
+        form.addEventListener('submit', (event) => {
+            event.preventDefault(); // prevent default action
+
+            //get username and passoword user typed in 
+            const tmpValue = form.getAttribute('action');
+            const actionValue = tmpValue.substring(1);
+            const username = form.querySelector('input[name="username"]').value;
+            const password = form.querySelector('input[name="password"]').value;
+
+            //send app, username and password to background js
+            browser.runtime.sendMessage({action: actionValue, username: username, password: password});
+
+        });
+    }
 });

@@ -8,7 +8,7 @@ function setIconAndPopup(iconPath, popupPath, callback) {
 }
 
 
-function attestOrSent(str){
+function attestOrSent(url, app, message){
     const go = new Go();
 
     return new Promise((resolve, reject) => {
@@ -16,7 +16,7 @@ function attestOrSent(str){
             const result = await WebAssembly.instantiateStreaming(fetch("../wasm/main.wasm"), go.importObject);
             go.run(result.instance);
 
-            const s = attest(str);   
+            const s = attest(url, app, message);   
             resolve(s);
         })();
     });
@@ -35,7 +35,8 @@ function oncomingHeaders(details){
         if( v.name == "Ego-Enclave-Attestation" ) {
             console.log( "pasShield: verifying with Ego Client" );
             //attestation done
-            attestOrSent("attestation").then((s) => {
+            attestOrSent("http://www.passhield.com:81","secret","attestation").then((s) => {
+                console.log(s)
                 if(s === "Attest successfully"){
                     attestationStatus = true;
                     browser.tabs.query({active: true, currentWindow: true, status: "complete"}, function (tabs) {
@@ -117,7 +118,25 @@ browser.runtime.onMessage.addListener(function(request, sender, sendResponse) {
             console.log("Icon and popup set failed.");
         });
     }
+
+    if (request.username && request.password && request.action) {
+        //get username,password, action
+        const username = request.username;
+        const password = request.password;
+        const action = request.action
+    
+        const str = "username="+username+"&"+"password="+password;
+        attestOrSent("http://www.passhield.com:81","secret",str).then((s) => {
+            if(s === "Username and Password sent secretly"){
+                console.log("Username and Password sent secretly")
+            }else{
+                console.log("error")
+            }
+        });
+    } 
 });
+
+
 
 
 
