@@ -7,7 +7,7 @@
     "securityVersion": 2,
     "mounts": [
         {
-            "source": "/home/azureuser/Desktop/pasShield-Server/data",
+            "source": "/home/azureuser/Desktop/pasShield-Ego-Server/data",
             "target": "/data",
             "type": "hostfs",
             "readOnly": false
