@@ -10,7 +10,7 @@ from login import login
 from logout import logout
 from register import register
 from home import home
-from attestation import attestation
+from favicon import favicon
 from server_start import server_start
 
 app = Flask(__name__, static_folder='../frontend/static')
@@ -29,7 +29,7 @@ app.register_blueprint(login)
 app.register_blueprint(logout)
 app.register_blueprint(register)
 app.register_blueprint(home)
-app.register_blueprint(attestation)
+app.register_blueprint(favicon)
 app.register_blueprint(server_start)
 
 @login_manager.user_loader
