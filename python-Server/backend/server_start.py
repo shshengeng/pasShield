@@ -12,7 +12,7 @@ login_manager.init_app(server_start)
 def server():
     try:
         os.chdir('/Users/rinkolite/Downloads/pasShield-main/pasShield-enclave')
-        subprocess.popen(['ego', 'run', 'main.go'], stdout=subprocess.PIPE)
+        subprocess.popen(['ego', 'run', 'server'], stdout=subprocess.PIPE)
         output, error = process.communicate()
         print(output.decode('utf-8'))
     except OSError as e:
