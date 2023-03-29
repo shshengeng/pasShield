@@ -1,6 +1,7 @@
-from flask import Blueprint, url_for, render_template, redirect, request
+from flask import Blueprint, url_for, render_template, redirect, request, session
 from flask_login import LoginManager
 from werkzeug.security import generate_password_hash
+import sqlalchemy
 
 from models import db, Users
 
@@ -29,10 +30,13 @@ def show():
 
                     db.session.add(new_user)
                     db.session.commit()
+                    
                 except sqlalchemy.exc.IntegrityError:
                     return redirect(url_for('register.show') + '?error=user-or-email-exists')
 
                 return redirect(url_for('login.show') + '?success=account-created')
+            else:
+                return redirect(url_for('register.show') + '?error=password != confirm password')
         else:
             return redirect(url_for('register.show') + '?error=missing-fields')
     else:
