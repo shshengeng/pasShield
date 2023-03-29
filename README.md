@@ -31,7 +31,7 @@ ego sign hello
 ego run hello
 ```
 
-[![GitHub Actions Status][github-actions-badge]][github-actions]
+
 [![PkgGoDev][go-pkg-badge]][go-pkg]
 
 <!-- refs -->
