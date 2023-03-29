@@ -32,10 +32,7 @@ ego run hello
 ```
 
 [![GitHub Actions Status][github-actions-badge]][github-actions]
-[![Go Report Card][go-report-card-badge]][go-report-card]
 [![PkgGoDev][go-pkg-badge]][go-pkg]
-[![Discord Chat][discord-badge]][discord]
-
 
 <!-- refs -->
 [github-actions]: https://github.com/edgelesssys/ego/actions
