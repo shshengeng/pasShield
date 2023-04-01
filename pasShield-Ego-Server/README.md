@@ -39,3 +39,17 @@ ego sign server
 ego run server
 ```
 
+ Rate Limiting
+------------
+Rate Limiting. In addition to rate limiting at the web server level (e.g. using Captchas after a certain number of failed attempts), we also implement a rate limiting algorithm in our TEE-protected password service . Our enclave program maintains a memory map (using golang  make(map[string]int)) that associates each salt with the remaining number of attempts(salt_with_attempt) . For maximum flexibility, our implementation uses a string salt and a int integer as salt_with_attempt, but this value can be reduced if memory consumption needs to be minimized.
+
+When the Login() http.Handle function for is called, the function first checks the value of salt_with_attempt[salt]; if the value is zero, the function only returns an error; otherwise, salt_with_attempt is decremented by 1, and the HMAC result is returned. The enclave stores reset_attempts, which is the time at which all attempt values are reset to a predefined value attemptsmax. When reset_attempts() is called, the function first gets the current time; then, if the reset has already passed, all attempt values are set to attemptsmax and the reset is incremented by a predefined value.
+
+To allow the enclave to restart (e.g. if the server restarts), the shutdown() function is used to securely store the state information outside the enclave. Specifically, the enclave seals the mapping of SafeKey, salt and attempt values, reset time. This sealed data can be restored to the enclave using the init() function. 
+
+A malicious server may attempt to reset the attempt values by abruptly terminating the enclave without first sealing its state. However, the enclave will detect this and raise an exception to prevent such attacks.
+
+Remote attestation
+------------
+
+
