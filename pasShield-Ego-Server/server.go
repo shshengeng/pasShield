@@ -12,17 +12,18 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"math/big"
 	"net/http"
 	"time"
+
 	"github.com/edgelesssys/ego/ecrypto"
 	"database/sql"
+	"encoding/json"
 	_ "github.com/mattn/go-sqlite3"
 	"gopkg.in/square/go-jose.v2/jwt"
 	"github.com/edgelesssys/ego/enclave"
-	"errors"
-	
 )
 
 // serverAddr is the address of the server
@@ -60,16 +61,29 @@ func main() {
 	//create Table for username,Hmac and salt.
 	statement, _ := database.Prepare("CREATE TABLE IF NOT EXISTS Hmac (username varchar(50) PRIMARY KEY, hmac varchar(128), salt BLOB)")
 	statement.Exec()
+
 	//create Table for Hmac key
 	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS Sealed (Hmackey BLOB PRIMARY KEY)")
 	statement.Exec()
 
-	//generate a random hmac key
-	hmacKey := initialize(database)
+	//create Table for salt_with_attempt
+	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS salt_with_attempt (data BLOB PRIMARY KEY)")
+	statement.Exec()
 
-	//map salt and attempt
-	salt_with_attempt := make(map[string]int)
-	resetTime := time.Now().Add(time.Minute * 1)
+	//create Table for attemp resetTime
+	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS resetTime (time BLOB PRIMARY KEY)")
+	statement.Exec()
+
+	//create Table for Token key
+	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS Token (username varchar(50) PRIMARY KEY, Token varchar(256))")
+	statement.Exec()
+
+	//generate a random hmac key
+	hmacKey,salt_with_attempt, resetTime, err := initialize(database)
+	if err != nil {
+		fmt.Println(err)
+	}
+
 
 	// Create HTTPS server.
 	http.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte(token)) })
@@ -123,24 +137,13 @@ func main() {
 			fmt.Println("Salted byte: ", salting)
 			fmt.Println("hmac: ", hmac)
 			
-			w.Write([]byte(fmt.Sprintf("username: %s", username)))
-			w.Write([]byte(fmt.Sprintf("hmac: %s ", hmac)))
-			w.Write([]byte(fmt.Sprintf("salt: %s ", salt)))
+			w.Write([]byte(fmt.Sprintf("register success")))
+			//test only
+			//w.Write([]byte(fmt.Sprintf("username: %s", username)))
+			//w.Write([]byte(fmt.Sprintf("hmac: %s ", hmac)))
+			//w.Write([]byte(fmt.Sprintf("salt: %s ", salt)))
 
 		}
-		
-		/*rows, _ := database.Query("SELECT * FROM Hmac")
-		fmt.Println("///////////////////sql code below(test only)/////////////////////////////////")
-		for rows.Next() {
-			rows.Scan(&username, &hmac, &salt)
-			fmt.Println("Username: " , username , "\nHmac: " , hmac , "\nsalt: " , salt , "\n")
-			
-		}
-
-		fmt.Println("////////////////////////////////////////////////////")
-		fmt.Println("////////////////////////////////////////////////////")
-		fmt.Println("////////////////////////////////////////////////////")*/
-    
 	})
 
 	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request){
@@ -173,10 +176,14 @@ func main() {
 			}
 		}else{
 			var salting = salting(pwd, salt)
+
+			//test only
 			fmt.Println("Salted byte: ", salting)
 			fmt.Println("hmac from DB: ", hmac)
 
 			var newHmac = genHmac(salting, hmacKey)
+
+			//test only
 			fmt.Println("newhmac: ", newHmac)
 
 			//test only
@@ -184,12 +191,23 @@ func main() {
 			//w.Write([]byte(fmt.Sprintf("salting: %s ", salting)))
 			if err := decrementAttempts(salt,salt_with_attempt); err != nil{
 				fmt.Println(err)
-				resetAttempts(salt_with_attempt, &resetTime, maxAttempts)
+				resetAttempts(salt_with_attempt, resetTime, maxAttempts)
 			}else{
 				if login := compareHMACs(hmac, newHmac); login == true{
 					fmt.Println("Verification success")
 					//test only
-					w.Write([]byte(fmt.Sprintf("Verification success")))
+					//w.Write([]byte(fmt.Sprintf("Verification success")))
+					
+					//sent token
+					random_token, err := GenerateRandomString(256)
+					if err != nil {
+						fmt.Println(err)
+					}else{
+						//save token in DB
+						if err := AddToken(username, random_token, database); err != nil {
+							fmt.Println(err)
+						}else{w.Write([]byte(fmt.Sprintf(random_token)))}
+					}
 				}else{
 					fmt.Println("Verification failure")
 					//test only
@@ -201,7 +219,7 @@ func main() {
 	
 	//Test only
 	http.HandleFunc("/shutdown", func(w http.ResponseWriter, r *http.Request) { 
-		if err := shutdown(hmacKey,database); err != nil {
+		if err := shutdown(hmacKey,database,salt_with_attempt, resetTime); err != nil {
 			fmt.Println(err)
 		}else{
 			fmt.Println("the state information successfully")
@@ -226,6 +244,34 @@ func main() {
 	err = server.ListenAndServeTLS("", "")
 	fmt.Println(err)
 }
+
+func AddToken(username string, Token string, database *sql.DB) error {
+    var count int
+    row := database.QueryRow("SELECT COUNT(*) FROM Token WHERE username = ?", username)
+    if err := row.Scan(&count); err != nil {
+        return err
+    }
+    if count > 0 {
+       //delete all the row from table Token
+	   statement, err := database.Prepare("DELETE FROM Token")
+	   if err != nil {
+		   return err
+	   }
+	   _, err = statement.Exec()
+	   if err != nil {
+		   return err
+	   }
+    }
+    statement, err := database.Prepare("INSERT INTO Token (username, Token) VALUES (?, ?)")
+    if err != nil {
+        return err
+    }
+    defer statement.Close()
+    _, err = statement.Exec(username, Token)
+    return err
+}
+
+
 
 // resetAttempts resets the number of attempts for each salt in the given attempts
 // map to the maximum number of attempts and updates the resetTime to be one day
@@ -279,7 +325,75 @@ func decrementAttempts(salt []byte, salt_with_attempt map[string]int) error {
 
 //securely stores the state information outside the enclave when systeam is shutting down.
 //input hmacKey return error if exits
-func shutdown(hmacKey []byte, database *sql.DB) error{
+func shutdown(hmacKey []byte, database *sql.DB, salt_with_attempt map[string]int, resetTime *time.Time) error{
+	if err := stores_HmacKey(hmacKey,database); err != nil {
+		fmt.Println(err)
+	}
+	if err := stores_salt_with_attempt(salt_with_attempt, resetTime, database); err != nil {
+		return err
+	}
+	
+	return err
+}
+
+func stores_salt_with_attempt(salt_with_attempt map[string]int, resetTime *time.Time, database *sql.DB) error{
+	var count int
+    row := database.QueryRow("SELECT COUNT(*) FROM salt_with_attempt")
+    if err := row.Scan(&count); err != nil {
+        return err
+    }
+	// first checks if an Hmac already exists 
+	//in the Sealed table of the provided database
+	//and returns an error if it does.
+    if count > 0 {
+		//delete all the row from table salt_with_attempt
+        statement, err := database.Prepare("DELETE FROM salt_with_attempt;")
+		if err != nil {
+			return err
+		}
+		_, err = statement.Exec()
+		if err != nil {
+			return err
+		}
+
+		//delete all the row from table salt_with_attempt
+		statement, err = database.Prepare("DELETE FROM resetTime;")
+		if err != nil {
+			return err
+		}
+		_, err = statement.Exec()
+		if err != nil {
+			return err
+		}
+    }
+	
+	jsonData, err := json.Marshal(salt_with_attempt)
+	if err != nil {
+		return err
+	}
+
+	var Sealed_jsonData =  sealing(jsonData)
+	_, err = database.Exec("INSERT INTO salt_with_attempt (data) VALUES (?)", Sealed_jsonData)
+	if err != nil {
+        return err
+    }
+
+	statement, err := database.Prepare("INSERT INTO resetTime (time) VALUES (?)")
+	if err != nil {
+		return err
+	}
+	defer statement.Close()
+
+	resetTimeStr := resetTime.Format(time.RFC3339) // Convert to ISO 8601 format
+	var resetTime_byte = []byte(resetTimeStr)
+	var Sealed_resetTime =  sealing(resetTime_byte)
+	_, err = statement.Exec(Sealed_resetTime)
+
+	return err
+}
+
+
+func stores_HmacKey(hmacKey []byte, database *sql.DB) error{
 	var count int
     row := database.QueryRow("SELECT COUNT(*) FROM Sealed")
     if err := row.Scan(&count); err != nil {
@@ -298,10 +412,12 @@ func shutdown(hmacKey []byte, database *sql.DB) error{
         return err
     }
     defer statement.Close()
-	var Seal =  Seal_hmacKey(hmacKey)
+	var Seal =  sealing(hmacKey)
     _, err = statement.Exec(Seal)
+
     return err
 }
+
 
 //input hmac from DB and newhmac return bool
 //compare HMACs if hmac1 = hmac2 return true 
@@ -334,12 +450,12 @@ func AddSaltAndHmac(username string, hmac string, salt[]byte, database *sql.DB) 
     if count > 0 {
         return errors.New("username already exists")
     }
-    statement, err := database.Prepare("INSERT INTO Hmac (username, salt, hmac) VALUES (?, ?, ?)")
+    statement, err := database.Prepare("INSERT INTO Hmac (username, hmac, salt) VALUES (?, ?, ?)")
     if err != nil {
         return err
     }
     defer statement.Close()
-    _, err = statement.Exec(username, salt, hmac)
+    _, err = statement.Exec(username, hmac, salt)
     return err
 }
 
@@ -348,7 +464,7 @@ func AddSaltAndHmac(username string, hmac string, salt[]byte, database *sql.DB) 
 //if not  return an error message if it does return  salt and hmac.
 func GetSaltAndHmac(username string, database *sql.DB) ([]byte, string, error) {
     // Execute the selection statement salt and HMAC value
-    rows, err := database.Query("SELECT salt, hmac FROM Hmac WHERE username = ?", username)
+    rows, err := database.Query("SELECT hmac, salt FROM Hmac WHERE username = ?", username)
     if err != nil {
         return nil, "", err
     }
@@ -359,7 +475,7 @@ func GetSaltAndHmac(username string, database *sql.DB) ([]byte, string, error) {
 
     // Traversing the query results, store the salt and HMAC values into the variable
     for rows.Next() {
-        err = rows.Scan(&salt, &hmac)
+        err = rows.Scan(&hmac, &salt)
         if err != nil {
             return nil, "", err
         }
@@ -372,19 +488,18 @@ func GetSaltAndHmac(username string, database *sql.DB) ([]byte, string, error) {
     return salt, hmac, nil
 }
 
-
 //generate a random hmac key and seal it
-func initialize(database *sql.DB) []byte {
+func initialize(database *sql.DB) ([]byte, map[string]int, *time.Time, error){
 	var count int
     row := database.QueryRow("SELECT COUNT(*) FROM Sealed")
     if err := row.Scan(&count); err != nil {
-		panic(err)
+		return nil, nil,nil, err
     }
     if count > 0 {
         // Execute the selection statement Hmackey value
 	 	rows, err := database.Query("SELECT Hmackey FROM Sealed")
 		if err != nil {
-			panic(err)
+			return nil, nil,nil, err
 		}
 		defer rows.Close()
 		var Seal []byte
@@ -393,31 +508,56 @@ func initialize(database *sql.DB) []byte {
 		for rows.Next() {
 			err = rows.Scan(&Seal)
 			if err != nil {
-				panic(err)
+				return nil, nil,nil, err
 			}
 		}
 		if Seal == nil{
-			panic(err)
+			return nil, nil,nil, err
 		}
-		var hmac =  Unseal_hmackey(Seal)
-		fmt.Printf("init() unSeal hmac key: %s", hmac)
-		return hmac
+		var hmac =  Unseal(Seal)
+
+		//test only
+		//fmt.Printf("init() unSeal hmac key: %s", hmac)
+
+		var jsonData []byte
+		err = database.QueryRow("SELECT data FROM salt_with_attempt").Scan(&jsonData)
+		if err != nil {
+			return nil, nil,nil, err
+		}
+		var UnSeal_jsonData =  Unseal(jsonData)
+		var saltWithAttempt map[string]int
+		err = json.Unmarshal(UnSeal_jsonData, &saltWithAttempt)
+		if err != nil {
+			return nil, nil,nil, err
+		}
+
+		var timeBytes []byte
+		err = database.QueryRow("SELECT time FROM resetTime").Scan(&timeBytes)
+		if err != nil {
+			return nil, nil,nil, err
+		}
+		var UnSeal_time =  Unseal(timeBytes)
+		resetTimeStr := string(UnSeal_time)
+		resetTime, err := time.Parse(time.RFC3339, resetTimeStr)
+		if err != nil {
+			return nil, nil,nil, err
+		}
+
+		return hmac, saltWithAttempt, &resetTime, err
     }else{
 		//generate a random hmac key 
 		random_hmackey, err := GenerateRandomString(128)
 		if err != nil {
-			panic(err)
+			return nil, nil,nil, err
 		}
 		fmt.Println("random_hmackey: ", random_hmackey)
 		fmt.Println("*********************************************************************************************************************************************************************************************************")
 		var keyBytes = []byte(random_hmackey)
-		//seal the hmac key we just generated
-		//var Seal =  seal_hmackey(random_hmackey)
-		//fmt.Println("seal_hmackey: ", Seal)
-
-		//Seal_statement, _ := database.Prepare("CREATE TABLE IF NOT EXISTS Seal (Seal BLOB PRIMARY KEY)")
 		
-		return keyBytes
+		salt_with_attempt := make(map[string]int)
+		resetTime := time.Now().Add(time.Minute * 1)
+
+		return keyBytes, salt_with_attempt, &resetTime, err
 	}
 }
 
@@ -437,7 +577,7 @@ func GenerateRandomString(n int) (string, error) {
 }
 
 //seal the Hmac key
-func Seal_hmacKey(hmacKey []byte) []byte {
+func sealing(hmacKey []byte) []byte {
 	var additionalData []byte
 	seal, err := ecrypto.SealWithUniqueKey(hmacKey,additionalData)
 
@@ -448,7 +588,7 @@ func Seal_hmacKey(hmacKey []byte) []byte {
 }
 
 //Unseal the Hmac key
-func Unseal_hmackey(hmacKey []byte) []byte {
+func Unseal(hmacKey []byte) []byte {
 	var additionalData []byte
 	hmac_key, err := ecrypto.Unseal(hmacKey,additionalData)
 
@@ -510,8 +650,8 @@ func createCertificate() ([]byte, crypto.PrivateKey) {
 }
 
 func checkTokenExpiration(ctx context.Context, tokenString string, cert []byte) {
-    //ticker := time.NewTicker(8 * time.Hour)
-	ticker := time.NewTicker(481 * time.Minute)
+	//ticker := time.NewTicker(480 * time.Minute)
+    ticker := time.NewTicker(8 * time.Hour)
     defer ticker.Stop()
 
     for {
