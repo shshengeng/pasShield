@@ -1,4 +1,33 @@
 let attestationStatus = false;
+let usernameinfo = ""
+
+
+window.addEventListener("message", function(event) {
+    console.log(event.data)
+    console.log(event.data.length)
+    //login token
+    if (event.data.length == 256) {
+        var xhr = new XMLHttpRequest();
+
+        xhr.onreadystatechange = function (){
+
+            console.log(this.readyState);
+        }
+
+        xhr.open("POST", "https://www.passhield.com/requestpage", true);
+        xhr.send();
+    }
+    //get register page and sent to content js to modify page
+    if(event.data.startswith("<!DOCTYPE html>")){
+        browser.tabs.query({active: true, currentWindow: true, status: "complete"}, function (tabs) {
+            if(tabs[0] !== undefined){
+                browser.tabs.sendMessage(tabs[0].id, {content: event.data}, function(){
+                });
+            }
+        });
+    }
+});
+  
 
 
 //set icon and popup
@@ -37,7 +66,7 @@ function oncomingHeaders(details){
             //attestation done
             attestOrSent("http://www.passhield.com:81","secret","attestation").then((s) => {
                 console.log(s)
-                if(s === "Attest successfully"){
+                if(s.substring(0,25) === "Attest successfully"){
                     attestationStatus = true;
                     browser.tabs.query({active: true, currentWindow: true, status: "complete"}, function (tabs) {
                         if(tabs[0] !== undefined){
@@ -74,6 +103,8 @@ function oncomingHeaders(details){
         }
     });
 }
+
+
 
 
 browser.webRequest.onHeadersReceived.addListener(
@@ -122,19 +153,25 @@ browser.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     if (request.username && request.password && request.action) {
         //get username,password, action
         const username = request.username;
+        usernameinfo = username;
         const password = request.password;
         const action = request.action;
     
         const str = "username="+username+"&"+"password="+password;
         attestOrSent("http://www.passhield.com:81",action,str).then((s) => {
             if(s === "Username and Password sent secretly"){
-                console.log("Username and Password sent secretly")
+                console.log("Username and Password sent secretly");
             }else{
-                console.log("error")
+                console.log("error");
             }
         });
     } 
 });
+
+
+
+
+
 
 
 
