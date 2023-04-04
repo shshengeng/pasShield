@@ -1,12 +1,18 @@
 {
- "exe": "server",
- "key": "private.pem",
- "debug": true,
- "heapSize": 512,
- "executableHeap": false,
- "productID": 1,
- "securityVersion": 1,
- "mounts": null,
- "env": null,
- "files": null
+    "exe": "server",
+    "key": "private.pem",
+    "debug": true,
+    "heapSize": 512,
+    "productID": 1234,
+    "securityVersion": 2,
+    "mounts": [
+        {
+            "source": "/home/azureuser/Desktop/pasShield-Ego-Server/data",
+            "target": "/data",
+            "type": "hostfs",
+            "readOnly": false
+        }
+    ],
+     "env": null,
+     "files": null
 }

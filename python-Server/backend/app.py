@@ -1,6 +1,7 @@
-from flask import Flask
+from flask import Flask, session
 import sqlalchemy
 from flask_login import LoginManager
+import os
 
 from models import db, Users
 
@@ -10,12 +11,13 @@ from logout import logout
 from register import register
 from home import home
 from favicon import favicon
-
+from server_start import server_start
 
 app = Flask(__name__, static_folder='../frontend/static')
 
 app.config['SECRET_KEY'] = 'secret_key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///../database.db'
+app.secret_key = os.urandom(24)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -27,8 +29,8 @@ app.register_blueprint(login)
 app.register_blueprint(logout)
 app.register_blueprint(register)
 app.register_blueprint(home)
-#app.register_blueprint(faviconaccess)
 app.register_blueprint(favicon)
+app.register_blueprint(server_start)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -36,4 +38,4 @@ def load_user(user_id):
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001)
+    app.run(host='0.0.0.0', port=3000)
