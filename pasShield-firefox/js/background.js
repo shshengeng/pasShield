@@ -1,24 +1,38 @@
 let attestationStatus = false;
+//let hostname = "";
 let usernameinfo = ""
 
 
 window.addEventListener("message", function(event) {
-    console.log(event.data)
-    console.log(event.data.length)
     //login token
     if (event.data.length == 256) {
         var xhr = new XMLHttpRequest();
-
         xhr.onreadystatechange = function (){
-
-            console.log(this.readyState);
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                  //successful,xhr.responseText should be a html page
+                    console.log(xhr.responseText);
+                    let jsonObject = JSON.parse(xhr.responseText);
+                    let htmlPage = jsonObject["page"];
+                    let cookie = jsonObject["cookie"];
+                    document.cookie = cookie;
+                    browser.tabs.query({active: true, currentWindow: true, status: "complete"}, function (tabs) {
+                    if(tabs[0] !== undefined){
+                        //send string to content.js,then content.js will modify page
+                        browser.tabs.sendMessage(tabs[0].id, {content: htmlPage}, function(){
+                        });
+                    }
+                    });
+                } else {
+                  console.log('Error:', xhr.statusText);
+                }
+              }
         }
-
-        xhr.open("POST", "https://www.passhield.com/requestpage", true);
-        xhr.send();
+        xhr.open("POST", "https://www.passhield.com/request_page", true);
+        xhr.send(usernameinfo+"&"+event.data);
     }
     //get register page and sent to content js to modify page
-    if(event.data.startswith("<!DOCTYPE html>")){
+    if(event.data.length != 256 && event.data.length > 30){
         browser.tabs.query({active: true, currentWindow: true, status: "complete"}, function (tabs) {
             if(tabs[0] !== undefined){
                 browser.tabs.sendMessage(tabs[0].id, {content: event.data}, function(){
@@ -64,7 +78,7 @@ function oncomingHeaders(details){
         if( v.name == "Ego-Enclave-Attestation" ) {
             console.log( "pasShield: verifying with Ego Client" );
             //attestation done
-            attestOrSent("http://www.passhield.com:81","secret","attestation").then((s) => {
+            attestOrSent("http://" + hostname + ":81","secret","attestation").then((s) => {
                 console.log(s)
                 if(s.substring(0,25) === "Attest successfully"){
                     attestationStatus = true;
@@ -148,6 +162,9 @@ browser.runtime.onMessage.addListener(function(request, sender, sendResponse) {
         setIconAndPopup({path: 'imgs/icons/cross.png'}, {popup: 'html/unsupported.html'}, function() {
             console.log("Icon and popup set failed.");
         });
+    }
+    if(request.hostname){
+        hostname = request.hostname;
     }
 
     if (request.username && request.password && request.action) {

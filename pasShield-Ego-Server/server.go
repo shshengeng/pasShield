@@ -653,8 +653,7 @@ func createCertificate() ([]byte, crypto.PrivateKey) {
 }
 
 func checkTokenExpiration(ctx context.Context, tokenString string, cert []byte) {
-	//ticker := time.NewTicker(480 * time.Minute)
-	ticker := time.NewTicker(8 * time.Hour)
+	ticker := time.NewTicker(2 * time.Hour)
 	defer ticker.Stop()
 
 	for {

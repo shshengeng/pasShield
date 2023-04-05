@@ -1,7 +1,10 @@
+//const hostname = window.location.hostname; //www.passhield.com
 var sgx_enabled = false;
 
 
 document.addEventListener("DOMContentLoaded", function() {
+
+    //browser.runtime.sendMessage({hostname: hostname});
 
     var tmp = 0;
     var metas = document.getElementsByTagName('meta');
