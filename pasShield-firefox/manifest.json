@@ -3,7 +3,7 @@
     "manifest_version": 2,
     "name": "pasShield",
     "version": "1.0",
-    "description": "",
+    "description": "pasShield is a server-side technology for protecting password databases. pasShield's server-side password protection service is a drop-in replacement for standard password hashing functions. It computes a Hash-based message authentication code(HMAC) on passwords before they are stored in the database",
     "homepage_url": "https://github.com/shshengeng/pasShield/tree/main/pasShield-firefox",
     "icons": {
       "48": "imgs/icons/lock-64.png"

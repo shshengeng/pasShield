@@ -1,7 +1,10 @@
+//const hostname = window.location.hostname; //www.passhield.com
 var sgx_enabled = false;
 
 
 document.addEventListener("DOMContentLoaded", function() {
+
+    //browser.runtime.sendMessage({hostname: hostname});
 
     var tmp = 0;
     var metas = document.getElementsByTagName('meta');
@@ -34,6 +37,9 @@ document.addEventListener("DOMContentLoaded", function() {
         }else if(request.SGXNotEnabled === "true"){
             sgx_enabled = false;
             sendResponse({answer: "SGXNotEnabled"});
+        }else if(request.content){
+            var root = document.documentElement;
+            root.innerHTML = request.content;
         }
     });
 
@@ -100,6 +106,7 @@ document.addEventListener("DOMContentLoaded", function() {
             //send app, username and password to background js
             browser.runtime.sendMessage({action: actionValue, username: username, password: password});
 
+            //form.submit();
         });
     }
 });
