@@ -137,7 +137,21 @@ func main() {
 			fmt.Println("Salted byte: ", salting)
 			fmt.Println("hmac: ", hmac)
 			
-			w.Write([]byte(fmt.Sprintf("register success")))
+			//w.Write([]byte(fmt.Sprintf("register success")))
+			w.Write([]byte(`<!DOCTYPE html>
+			<html>
+			  <head>
+				<meta charset='utf-8'>
+				<title>register successful</title>
+			  </head>
+			  <body>
+				<h1>Congratulations, your registration is successful!</h1>
+				<hr>
+				<p>Thank you for registering with our website, you can now log in with your account and start using our services.</p>
+				<a href="https://www.passhield.com"><button>Login</button></a>
+			  </body>
+			</html>
+			`))
 			//test only
 			//w.Write([]byte(fmt.Sprintf("username: %s", username)))
 			//w.Write([]byte(fmt.Sprintf("hmac: %s ", hmac)))
@@ -253,11 +267,11 @@ func AddToken(username string, Token string, database *sql.DB) error {
     }
     if count > 0 {
        //delete all the row from table Token
-	   statement, err := database.Prepare("DELETE FROM Token")
+	   statement, err := database.Prepare("DELETE FROM Token WHERE username = ?")
 	   if err != nil {
 		   return err
 	   }
-	   _, err = statement.Exec()
+	   _, err = statement.Exec(username)
 	   if err != nil {
 		   return err
 	   }
