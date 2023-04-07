@@ -12,10 +12,11 @@ window.addEventListener("message", function(event) {
                 if (xhr.status === 200) {
                   //successful,xhr.responseText should be a html page
                     console.log(xhr.responseText);
-                    let jsonObject = JSON.parse(xhr.responseText);
-                    let htmlPage = jsonObject["page"];
-                    let cookie = jsonObject["cookie"];
-                    document.cookie = cookie;
+                    let htmlPage = xhr.responseText;
+                    // let jsonObject = JSON.parse(xhr.responseText);
+                    // let htmlPage = jsonObject["page"];
+                    // let cookie = jsonObject["cookie"];
+                    // document.cookie = cookie;
                     browser.tabs.query({active: true, currentWindow: true, status: "complete"}, function (tabs) {
                     if(tabs[0] !== undefined){
                         //send string to content.js,then content.js will modify page
@@ -28,8 +29,11 @@ window.addEventListener("message", function(event) {
                 }
               }
         }
-        xhr.open("POST", "https://www.passhield.com/request_page", true);
-        xhr.send(usernameinfo+"&"+event.data);
+        xhr.open("POST", "https://www.passhield.com/login", true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        console.log(usernameinfo);
+        console.log(event.data);
+        xhr.send("username=" + usernameinfo + "&token=" + event.data);
     }
     //get register page and sent to content js to modify page
     if(event.data.length != 256 && event.data.length > 30){
@@ -78,7 +82,7 @@ function oncomingHeaders(details){
         if( v.name == "Ego-Enclave-Attestation" ) {
             console.log( "pasShield: verifying with Ego Client" );
             //attestation done
-            attestOrSent("http://" + hostname + ":81","secret","attestation").then((s) => {
+            attestOrSent("http://www.passhield.com:81","secret","attestation").then((s) => {
                 console.log(s)
                 if(s.substring(0,25) === "Attest successfully"){
                     attestationStatus = true;
