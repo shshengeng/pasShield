@@ -199,7 +199,22 @@ func main() {
 			if err == sql.ErrNoRows {
 				fmt.Printf("username is not in the Database")
 				w.WriteHeader(http.StatusNotFound)
-				w.Write([]byte(fmt.Sprintf("Record not found for username %s: . Error: %s", username, err.Error())))
+				//w.Write([]byte(fmt.Sprintf("Record not found for username %s: . Error: %s", username, err.Error())))
+				w.Write([]byte(`<!DOCTYPE html>
+					<html>
+					<head>
+						<meta charset='utf-8'>
+						<title>login failed</title>
+					</head>
+					<body>
+						<h1>Sorry, login is failed.</h1>
+						<h1>the username is not existed in database</h1>
+						<hr>
+						<a href="https://www.passhield.com"><button>Login</button></a>
+						<a href="https://www.passhield.com/register"><button>Register</button></a>
+					</body>
+					</html>
+				`))
 			}
 		} else {
 			var salting = salting(pwd, salt)
@@ -240,7 +255,22 @@ func main() {
 				} else {
 					fmt.Println("Verification failure")
 					//test only
-					w.Write([]byte(fmt.Sprintf("Verification failure")))
+					//w.Write([]byte(fmt.Sprintf("Verification failure")))
+					w.Write([]byte(`<!DOCTYPE html>
+						<html>
+						<head>
+							<meta charset='utf-8'>
+							<title>login failed</title>
+						</head>
+						<body>
+							<h1>Sorry, login is failed.</h1>
+							<h1>password is not matched with your username</h1>
+							<hr>
+							<a href="https://www.passhield.com"><button>Login</button></a>
+							<a href="https://www.passhield.com/register"><button>Register</button></a>
+						</body>
+						</html>
+					`))
 				}
 			}
 		}
