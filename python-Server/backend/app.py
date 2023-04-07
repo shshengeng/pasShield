@@ -1,4 +1,4 @@
-from flask import Flask, session
+from flask import Flask
 import sqlalchemy
 from flask_login import LoginManager
 import os
@@ -11,7 +11,7 @@ from logout import logout
 from register import register
 from home import home
 from favicon import favicon
-from server_start import server_start
+
 
 app = Flask(__name__, static_folder='../frontend/static')
 
@@ -30,7 +30,6 @@ app.register_blueprint(logout)
 app.register_blueprint(register)
 app.register_blueprint(home)
 app.register_blueprint(favicon)
-app.register_blueprint(server_start)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -38,4 +37,4 @@ def load_user(user_id):
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=3000)
+    app.run(host='0.0.0.0', port=5001)
