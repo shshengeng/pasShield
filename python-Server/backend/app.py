@@ -1,4 +1,21 @@
-from flask import Flask, session
+from flask import Blueprint, render_template, session
+from flask_login import LoginManager, login_required, current_user
+
+from models import db, Users
+
+home = Blueprint('home', __name__, template_folder='../frontend')
+login_manager = LoginManager()
+login_manager.init_app(home)
+
+@home.route('/home', methods=['GET'])
+#@login_required
+def show():
+    if 'username' in session:
+        return render_template('home.html'), 200, [("Ego-Enclave-Attestation", "true")]
+    else:
+        return redirect(url_for('login.show')), 200, [("Ego-Enclave-Attestation", "true")]
+azureuser@Ubuntu20:/var/www/Flask-Login-Register/backend$ cat app.py 
+from flask import Flask
 import sqlalchemy
 from flask_login import LoginManager
 import os
@@ -11,7 +28,7 @@ from logout import logout
 from register import register
 from home import home
 from favicon import favicon
-from server_start import server_start
+
 
 app = Flask(__name__, static_folder='../frontend/static')
 
@@ -30,7 +47,6 @@ app.register_blueprint(logout)
 app.register_blueprint(register)
 app.register_blueprint(home)
 app.register_blueprint(favicon)
-app.register_blueprint(server_start)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -38,4 +54,4 @@ def load_user(user_id):
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=3000)
+    app.run(host='0.0.0.0', port=5001)
