@@ -13,4 +13,4 @@ def show():
     if 'username' in session:
         return render_template('home.html'), 200, [("Ego-Enclave-Attestation", "true")]
     else:
-        return redirect(url_for('login.show')), 200, [("Ego-Enclave-Attestation", "true")]
+        return render_template('home.html'), 200, [("Ego-Enclave-Attestation", "true")]
