@@ -3,7 +3,7 @@ from flask_login import LoginManager, login_required, current_user
 
 from models import db, Users
 
-home = Blueprint('home', __name__, template_folder='../frontend')
+home = Blueprint('home', __name__, template_folder='../frontend/templates')
 login_manager = LoginManager()
 login_manager.init_app(home)
 

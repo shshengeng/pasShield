@@ -4,10 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="css/style.css">
+    <meta name="SGXEnabled" content="true">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
         body{
-            background-image: url("imgs/3.jpg");
+            background-image: url("{{ url_for('static', filename='imgs/3.jpg') }}");
             background-repeat: no-repeat;
             background-attachment: fixed;
             background-size: cover;

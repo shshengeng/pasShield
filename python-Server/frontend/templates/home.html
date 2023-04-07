@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>My Profile</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    	<meta name="SGXEnabled" content="true">
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/home.css') }}">
+	<style>
+		body{
+            background-image: url("{{ url_for('static', filename='imgs/2.jpg') }}");
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            background-size: cover;
+        }
+	</style>
+</head>
+<body>
+	<div class="container">
+		<img src="https://cdn0.iconfinder.com/data/icons/work-from-home-18/512/Freelance-freelancer-occupation-job-worker-512.png" alt="">
+		<h1>{{session['username']}}</h1>
+		
+		<h2>Skills</h2>
+		<ul>
+			<li>HTML</li>
+			<li>CSS</li>
+			<li>JavaScript</li>
+			<li>Python</li>
+			<li>Go</li>
+			
+		</ul>
+        <p>
+            <a href="/logout">Log out</a>
+	</div>
+</body>
+</html>
+

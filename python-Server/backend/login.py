@@ -6,19 +6,15 @@ from werkzeug.security import check_password_hash
 from models import db, Users
 import sqlite3
 
-login = Blueprint('login', __name__, template_folder='../frontend')
+login = Blueprint('login', __name__, template_folder='../frontend/templates')
 login_manager = LoginManager()
 login_manager.init_app(login)
 
 @login.route('/login', methods=['GET', 'POST'])
 def show():
     if request.method == 'POST':
-        #username = request.form['username']
-        #password = request.form['password']
         username =  request.form.get('username')
         token = request.form.get('token')
-        print(username)
-        print(token)
         try: 
             with sqlite3.connect('/home/azureuser/Desktop/pasShield-Ego-Server/data/password.db') as conn:
                 cur = conn.cursor()
@@ -32,4 +28,4 @@ def show():
         except: 
             return redirect(url_for('login.show') + '?error=unknown')
     else:
-        return render_template('login.html')
+        return render_template('login.html'), 200, [("Ego-Enclave-Attestation", "true")]

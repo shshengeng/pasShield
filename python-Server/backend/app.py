@@ -10,10 +10,9 @@ from login import login
 from logout import logout
 from register import register
 from home import home
-from favicon import favicon
 
 
-app = Flask(__name__, static_folder='../frontend/static')
+app = Flask(__name__, static_folder='../static')
 
 app.config['SECRET_KEY'] = 'secret_key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///../database.db'
@@ -29,7 +28,6 @@ app.register_blueprint(login)
 app.register_blueprint(logout)
 app.register_blueprint(register)
 app.register_blueprint(home)
-app.register_blueprint(favicon)
 
 @login_manager.user_loader
 def load_user(user_id):
