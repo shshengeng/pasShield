@@ -84,3 +84,7 @@ The client can now establish a secure TLS connection to the enclaved server usin
 
 EGo's API provides helpful functions to simplify the remote attestation with Microsoft Azure Attestation. The server can use the [CreateAzureAttestationToken()](https://pkg.go.dev/github.com/edgelesssys/ego/enclave#CreateAzureAttestationToken) function form the enclave package to conduct steps 1 - 4 and get the token. The client can use the [VerifyAzureAttestationToken()](https://pkg.go.dev/github.com/edgelesssys/ego/attestation#VerifyAzureAttestationToken) function from EGo's attestation package to perform steps 6 and 7. While this function verifies the signature and the public claims of the token, the client has to verify the resulting report values.
 
+Shuting down
+------------
+
+When the shutdown() function of the pasShield enclave is called, it performs a graceful shutdown of the enclave. Specifically, it first seals the SafeKey and the current state of the enclave. Sealing the SafeKey means that the key is encrypted and stored in a secure location outside of the enclave, such that it can only be accessed when the enclave is started again. This ensures that even if an attacker gains access to the server and extracts the enclave's data, they won't be able to access the SafeKey and thus the passwords.Overall, the shutdown() function plays an important role in ensuring the security of the pasShield password protection service, by securely sealing the SafeKey and clearing the enclave's memory when the service is shut down.
