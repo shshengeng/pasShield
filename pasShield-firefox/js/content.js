@@ -54,7 +54,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 const div = document.createElement('div');
                 div.setAttribute('id', 'div1');
-                div.textContent = 'Data will be sent in a secure chanle'; 
+                div.textContent = 'Data will be sent in a secure channel'; 
                 div.style.cssText = 'margin-left: 10px; display: none; width: 50px; height: 50px; background-color: #99FF99; color: black;'; 
                 e.insertAdjacentElement('afterend', div);
 
@@ -74,7 +74,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 const div = document.createElement('div');
                 div.setAttribute('id', 'div2');
-                div.textContent = 'Data will be sent in a secure chanle'; 
+                div.textContent = 'Data will be sent in a secure channel'; 
                 div.style.cssText = 'margin-left: 10px; display: none; width: 50px; height: 50px; background-color: #99FF99; color: black;'; 
                 e.insertAdjacentElement('afterend', div);
 
