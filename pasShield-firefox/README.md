@@ -6,7 +6,7 @@ pasShield is a server-side technology for protecting password databases. For use
 
 Installation
 --------------
-To install the extension, make sure you have installed firefox browser(this addon is built for firefox) and downlowned the passhield-firefox code in your own computer, open the firefox and input about:addons, then click settings is on the same line as 'manage your extensions', then choose 'install add-on from file'
+To install the extension, make sure you have installed firefox browser(this addon is built for firefox) and downlowned the passhield-firefox code in your own computer, open the firefox and input about:debugging, then click 'this firefox' on left side, then click 'Load Temporary Add-on', select the manifest.json under pasShield-firefox folder. Then, you are all set to use pasShield.
 
 Remote attestation
 ---------------------
