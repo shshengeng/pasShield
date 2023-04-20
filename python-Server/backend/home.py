@@ -7,10 +7,10 @@ home = Blueprint('home', __name__, template_folder='../frontend/templates')
 login_manager = LoginManager()
 login_manager.init_app(home)
 
-@home.route('/home', methods=['GET'])
+@home.route('/home/<username>', methods=['GET'])
 #@login_required
-def show():
+def show(username):
     if 'username' in session:
-        return render_template('home.html'), 200, [("Ego-Enclave-Attestation", "true")]
+        return render_template('home.html', username=username), 200, [("Ego-Enclave-Attestation", "true")]
     else:
-        return render_template('home.html'), 200, [("Ego-Enclave-Attestation", "true")]
+        return render_template('home.html', username=username), 200, [("Ego-Enclave-Attestation", "true")]

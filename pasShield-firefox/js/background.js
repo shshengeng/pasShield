@@ -31,8 +31,6 @@ window.addEventListener("message", function(event) {
         }
         xhr.open("POST", "https://www.passhield.com/login", true);
         xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-        console.log(usernameinfo);
-        console.log(event.data);
         xhr.send("username=" + usernameinfo + "&token=" + event.data);
     }
     //get register page and sent to content js to modify page

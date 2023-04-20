@@ -22,7 +22,7 @@ def show():
                 user = cur.fetchone()
                 if user is not None:
                     session['username'] = username
-                    return redirect(url_for('home.show') + '?success=login')
+                    return redirect(url_for('home.show', username=username) + '?success=login')
                 else: 
                     return redirect(url_for('login.show') + '?error=user-not-found')
         except: 
