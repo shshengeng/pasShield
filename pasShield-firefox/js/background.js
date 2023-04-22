@@ -58,7 +58,7 @@ function attestOrSent(url, app, message){
 
     return new Promise((resolve, reject) => {
         (async function() {
-            const result = await WebAssembly.instantiateStreaming(fetch("../wasm/main.wasm"), go.importObject);
+            const result = await WebAssembly.instantiateStreaming(fetch("../wasm/main1.wasm"), go.importObject);
             go.run(result.instance);
 
             const s = attest(url, app, message);   
